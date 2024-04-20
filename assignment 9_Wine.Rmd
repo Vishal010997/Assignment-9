@@ -1,0 +1,470 @@
+---
+title: "Assignment 9_wine data"
+output: html_document
+date: "2024-04-19"
+---
+
+```{r}
+
+
+# Load required libraries
+library(cluster)     # For cluster analysis
+library(readr)       # For reading data files
+library(factoextra)  # For visualizing multivariate analysis results
+library(magrittr)    # For using the pipe operator %>%
+library(NbClust)     # For determining the optimal number of clusters
+
+
+
+```
+
+
+```{r}
+
+#for loading csv data
+library(readr)
+
+# Read the CSV file
+df <- read_csv("C:/Rutgers/Subjects/Spring Sem/Multivariate Analysis/Data/wine.csv")
+
+#dataframe
+df
+
+
+
+```
+
+
+```{R}
+attach(df)
+xtabs(~ quality + alcohol, data = df)
+
+xtabs(~ quality + `citric acid`, data = df)
+
+
+xtabs(~ quality + `fixed acidity`, data = df)
+
+xtabs(~ quality + `volatile acidity`, data=df)
+xtabs(~ quality + `residual sugar`, data=df)
+xtabs(~ quality + chlorides, data=df)
+xtabs(~ quality + `free sulfur dioxide`, data=df)
+xtabs(~ quality + `total sulfur dioxide`, data=df)
+xtabs(~ quality + density, data=df)
+xtabs(~ quality + pH, data=df)
+xtabs(~ quality + sulphates, data=df)
+
+
+```
+
+```{R}
+# Assuming 'quality' is a column in the data frame 'df'
+distinct_values <- unique(df$quality)
+
+# Print distinct values
+print(distinct_values)
+
+# Count the number of unique values
+num_unique <- length(distinct_values)
+
+# Print the number of unique values
+print(num_unique)
+```
+
+
+```{r}
+
+table(df$quality)
+
+```
+```{r}
+
+# Recode the quality variable to binary (0 for "bad" and 1 for "good")
+#df$quality <- as.numeric(df$quality == "good")
+df
+```
+
+
+
+1) Model Development (2 points)
+
+
+Alcohol:
+
+Estimate: 1.00468
+
+This indicates that for every one-unit increase in alcohol, the log-odds of the wine being of good quality (as opposed to bad quality) increase by 1.00468.
+
+
+Std. Error: 0.06884
+This shows the standard error associated with the coefficient estimate.
+
+
+z value: 14.594
+
+
+The z value is the coefficient estimate divided by its standard error. It indicates the number of standard deviations a parameter estimate is from the null hypothesis value of 0. The higher the z value, the more significant the predictor.
+
+p-value: <0.0000000000000002 ***
+
+
+The p-value indicates the significance of each predictor. In this case, the p-value is extremely low, indicating a significant relationship between alcohol and the quality of the wine.
+
+
+Volatile Acidity:
+
+Estimate: -3.54124
+
+This indicates that for every one-unit increase in volatile acidity, the log-odds of the wine being of good quality (as opposed to bad quality) decrease by 3.54124.
+
+
+Std. Error: 0.35470
+This shows the standard error associated with the coefficient estimate.
+
+
+z value: -9.984
+
+
+The z value is the coefficient estimate divided by its standard error. It indicates the number of standard deviations a parameter estimate is from the null hypothesis value of 0. The more negative the z value, the more significant the negative relationship.
+
+
+p-value: <0.0000000000000002 ***
+
+
+The p-value indicates the significance of each predictor. In this case, the p-value is extremely low, indicating a significant relationship between volatile acidity and the quality of the wine.
+
+
+```{r}
+attach(df)
+#df <- df[, !names(df) %in% "quality_new"]
+# Fit logistic regression model with the binary indicator
+# Fit logistic regression model with binary indicator
+
+# Convert 'quality' variable to a factor
+df$quality <- factor(df$quality, levels = c("bad", "good"))
+
+
+logistic_simple <- glm(quality ~ alcohol + `volatile acidity`  , data = df, family = "binomial")
+
+# Summary of the model
+summary(logistic_simple)
+
+```
+```{r}
+df
+```
+```{r}
+predicted.data <- data.frame(probability.of.quality=logistic_simple$fitted.values,quality=df$quality)
+
+
+options(scipen = 999)
+predicted.data
+```
+
+2) Model Acceptance (2 points)
+
+
+Inference:
+
+Volatile Acidity:
+As the volatile acidity level increases, the probability of wine quality being bad increases and the probability of wine quality being good decreases.
+
+
+Interpretation:
+
+At a volatile acidity level of 0.12:
+
+Probability of Quality Being Bad: 0.0395216662402474
+
+Probability of Quality Being Good: 0
+
+Interpretation: At a volatile acidity level of 0.12, the probability of wine quality being bad is approximately 0.0395, and the probability of wine quality being good is 0.
+
+At a volatile acidity level of 0.16:
+
+Probability of Quality Being Bad: 0.0395216662402474
+
+Probability of Quality Being Good: 0
+
+Interpretation: At a volatile acidity level of 0.16, the probability of wine quality being bad is approximately 0.0395, and the probability of wine quality being good is 0.
+
+At a volatile acidity level of 0.18:
+
+Probability of Quality Being Bad: 0.0395216662402474
+
+Probability of Quality Being Good: 0
+Interpretation: At a volatile acidity level of 0.18, the probability of wine quality being bad is approximately 0.0395, and the probability of wine quality being good is 0.
+
+At a volatile acidity level of 0.19:
+
+Probability of Quality Being Bad: 0.0395216662402474
+
+Probability of Quality Being Good: 0
+
+Interpretation: At a volatile acidity level of 0.19, the probability of wine quality being bad is approximately 0.0395, and the probability of wine quality being good is 0.
+
+This pattern continues for each level of volatile acidity, with the probability of wine quality being bad increasing and the probability of wine quality being good decreasing
+
+```{r}
+
+xtabs(~ probability.of.quality + `volatile acidity` + `citric acid`, data=predicted.data)
+```
+3) Residual Analysis (2 points)
+
+Null Deviance (2209.0):
+
+Represents the deviance when the model only consists of the intercept.
+
+The higher the value, the worse the model fits the data without any predictors.
+
+Residual Deviance (1804.7):
+
+Represents the deviance when the predictors are included in the model.
+
+The lower the value, the better the model fits the data with predictors.
+
+Degrees of Freedom (1598 for Null, 1596 for Residuals):
+
+Degrees of freedom are a measure of the amount of information that went into estimation of the parameters.
+
+It's the number of independent values or quantities that can be assigned to a statistical distribution.
+
+Difference (404.3):
+
+A measure of how much better the model with predictors explains the data compared to a model with just the intercept.
+
+A larger difference implies a better fit of the model.
+```{R}
+logistic <- glm(quality ~ alcohol +  sulphates, data=df, family="binomial")
+summary(logistic)
+
+
+```
+
+```{r}
+## Now calculate the overall "Pseudo R-squared" and its p-value
+ll.null <- logistic$null.deviance/-2
+ll.proposed <- logistic$deviance/-2
+(ll.null - ll.proposed) / ll.null
+
+
+```
+Predicted value = bad
+
+```{R}
+
+## The p-value for the R^2
+1 - pchisq(2*(ll.proposed - ll.null), df=(length(logistic$coefficients)-1))
+predicted.data$quality <- 
+data.frame(probability.of.quality=logistic$fitted.values,quality=df$quality)
+```
+4) Prediction (2 points)
+
+Prediction seem to be accurate below
+
+Inference:
+
+Low Predicted Probability of Bad Quality:
+
+Values like 0.2539028, 0.4152374, 0.3959143, 0.2539028, 0.2539028, 0.2066703, and 0.2077082 represent a low likelihood of bad quality.
+
+For instance, a value of 0.2539028 indicates a relatively low probability of being bad quality, but the possibility is still there.
+
+A value of 0.2066703 indicates a very low probability of bad quality.
+
+A value of 0.2077082 indicates a very low probability of bad quality.
+
+A value of 0.1606866 indicates an extremely low probability of bad quality.
+
+High Predicted Probability of Bad Quality:
+
+Values like 0.6691553, 0.6691553, 0.3393559, 0.7829626, 0.3940586, 0.4263695, 0.6774938 represent a high likelihood of bad quality.
+
+For instance, a value of 0.6691553 indicates a high probability of being bad quality.
+
+A value of 0.7829626 indicates a very high probability of bad quality.
+
+Good Quality:
+
+Values like 0.3521585, 0.3326894, 0.2793961, 0.6389391, and 0.5260103 indicate a prediction of good quality.
+
+For instance, a value of 0.3521585 indicates a probability of being good quality, but there is still a possibility of it being bad quality.
+
+
+
+probability:
+
+probability.of.quality: The predicted probabilities of each quality category (bad or good).
+
+quality:
+bad: Indicates low quality.
+good: Indicates high quality.
+
+```{R}
+data.frame(probability.of.quality=logistic$fitted.values,quality=df$quality)
+ggplot(data = predicted.data, aes(x = probability.of.quality, y = df$quality)) +
+  geom_point(aes(color = df$quality), alpha = 1, shape = 4, stroke = 2) +
+  xlab("Predicted probability of having good and bad quality wine") +
+  ylab("Binary Quality")
+```
+```{R}
+
+# From Caret
+pdata <- predict(logistic,newdata=df,type="response" )
+pdata
+
+
+
+```
+
+```{r}
+
+library(caret)
+library(pROC)
+
+pdataF <- as.factor(ifelse(test=as.numeric(pdata>0.5) == 0, yes="good", no="bad"))
+
+
+attributes(pdataF)
+
+```
+
+5) Model Accuracy (2 points)
+
+Accuracy: 0.2964
+
+Percentage of correctly predicted observations.
+
+95% CI: (0.2741, 0.3195)
+
+The confidence interval for the accuracy.
+
+No Information Rate (NIR): 0.5347
+
+The accuracy that could be achieved by always predicting the majority class.
+
+
+P-Value [Acc > NIR]: 1.00000
+
+The probability that the accuracy is greater than the No Information Rate.
+
+Kappa: -0.4065
+
+A measure of how closely the instances classified as the same class agree with the actual classification.
+
+A kappa of 1 represents perfect agreement, and a kappa of 0 represents agreement equivalent to random chance.
+
+Negative values suggest no agreement.
+
+Mcnemar's Test P-Value: 0.07364
+
+A statistical test used on paired nominal data.
+
+Tests if the row and column marginal frequencies are equal.
+
+Sensitivity (True Positive Rate): 0.2849
+
+The proportion of actual positive cases that were correctly identified.
+
+Specificity (True Negative Rate): 0.3064
+
+The proportion of actual negative cases that were correctly identified.
+
+Positive Predictive Value (PPV): 0.2634
+The proportion of positive identifications that were actually correct.
+
+Negative Predictive Value (NPV): 0.33
+
+The proportion of negative identifications that were actually correct.
+
+Prevalence: 0.4653
+
+The proportion of actual positive cases.
+
+Detection Rate: 0.1326
+
+The proportion of actual positive cases
+
+
+```{r}
+
+# Create confusion matrix
+confusionMatrix(pdataF, df$quality)
+```
+```{r}
+# From pROC
+roc(df$quality,logistic$fitted.values,plot=TRUE)
+par(pty = "s")
+roc(df$quality,logistic$fitted.values,plot=TRUE)
+
+
+```
+
+
+```{R}
+## NOTE: By default, roc() uses specificity on the x-axis and the values range
+## from 1 to 0. This makes the graph look like what we would expect, but the
+## x-axis itself might induce a headache. To use 1-specificity (i.e. the
+## False Positive Rate) on the x-axis, set "legacy.axes" to TRUE.
+roc(df$quality,logistic$fitted.values,plot=TRUE, legacy.axes=TRUE)
+roc(df$quality,logistic$fitted.values,plot=TRUE, legacy.axes=TRUE, xlab="False Positive Percentage", ylab="True Postive Percentage")
+```
+
+```{R}
+roc(df$quality,logistic$fitted.values,plot=TRUE, legacy.axes=TRUE, xlab="False Positive Percentage", ylab="True Postive Percentage", col="#377eb8", lwd=4)
+roc(df$quality,logistic$fitted.values,plot=TRUE, legacy.axes=TRUE, xlab="False Positive Percentage", ylab="True Postive Percentage", col="#377eb8", lwd=4)
+
+
+```
+
+
+```{R}
+
+## If we want to find out the optimal threshold we can store the
+## data used to make the ROC graph in a variable...
+roc.info <- roc(df$quality, logistic$fitted.values, legacy.axes=TRUE)
+str(roc.info)
+## tpp = true positive percentage
+## fpp = false positive precentage
+roc.df <- data.frame(tpp=roc.info$sensitivities*100, fpp=(1 - roc.info$specificities)*100,thresholds=roc.info$thresholds)
+roc.df
+head(roc.df) 
+
+```
+
+```{R}
+## head() will show us the values for the upper right-hand corner of the ROC graph, when the threshold is so low
+## (negative infinity) that every single sample is called "obese".
+## Thus TPP = 100% and FPP = 100%
+tail(roc.df) 
+```
+
+```{R}
+
+## tail() will show us the values for the lower left-hand corner
+## of the ROC graph, when the threshold is so high (infinity)
+## that every single sample is called "not obese".
+## Thus, TPP = 0% and FPP = 0%
+## now let's look at the thresholds between TPP 60% and 80%
+roc.df[roc.df$tpp > 60 & roc.df$tpp < 80,]
+roc(df$quality,logistic$fitted.values,plot=TRUE, legacy.axes=TRUE, xlab="False Positive Percentage", ylab="True Postive Percentage", col="#377eb8", lwd=4, percent=TRUE)
+
+```
+
+```{r}
+roc(df$quality,logistic$fitted.values,plot=TRUE, legacy.axes=TRUE, xlab="False Positive Percentage", ylab="True Postive Percentage", col="#377eb8", lwd=4, percent=TRUE, print.auc=TRUE)
+
+```
+`
+
+
+
+```{r}
+# Lets do two roc plots to understand which model is better
+roc(df$quality, logistic_simple$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE, xlab="False Positive Percentage", ylab="True Postive Percentage", col="#377eb8", lwd=4, print.auc=TRUE)
+
+# Lets add the other graph
+plot.roc(df$quality, logistic$fitted.values, percent=TRUE, col="#4daf4a", lwd=4, print.auc=TRUE, add=TRUE, print.auc.y=40)
+legend("bottomright", legend=c("Simple", "Non Simple"), col=c("#377eb8", "#4daf4a"), lwd=4) 
+
+```
+```
